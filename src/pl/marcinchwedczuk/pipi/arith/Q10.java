@@ -49,4 +49,13 @@ public class Q10 {
 
         return s.toString();
     }
+
+    public static Q10 add(Q10 a, Q10 b) {
+        Z10 commonDenom = Z10.multiply(a.denominator, b.denominator);
+        Z10 numerator = Z10.add(
+                Z10.multiply(a.numerator, b.denominator),
+                Z10.multiply(b.numerator, a.denominator));
+
+        return new Q10(numerator, commonDenom);
+    }
 }
