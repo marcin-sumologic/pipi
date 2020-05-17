@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -171,6 +172,64 @@ public class Z10Test {
             }
         }
     }
+
+    @Test public void division_works() {
+        assertDivisionWorks(1, 1);
+        assertDivisionWorks(3, 3);
+        assertDivisionWorks(13, 13);
+        assertDivisionWorks(13, 1);
+
+        assertDivisionWorks(13, -13);
+        assertDivisionWorks(-13, 13);
+        assertDivisionWorks(-13, -13);
+
+        assertDivisionWorks(12, 3);
+        assertDivisionWorks(3, 12);
+    }
+
+    @Test public void division_stress_test() {
+        Random r = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 1000; i++) {
+            long a = Math.abs(r.nextLong());
+            long b = Math.abs(r.nextLong());
+            if (b == 0) { i--; continue; }
+
+            try {
+                assertDivisionWorks(a, b);
+            }
+            catch (AssertionError ae) { throw ae; } // junit
+            catch (Exception e) {
+                e.printStackTrace();
+                Assert.fail(String.format(
+                        "Dividing %d and %d resulted in exception %s.", a, b, e));
+            }
+        }
+    }
+
+    private void assertDivisionWorks(long a, long b) {
+        Z10 za = Z10.of(a);
+        Z10 zb = Z10.of(b);
+        Z10[] qr = Z10.divideSlowly(za, zb);
+
+        BigDecimal da = BigDecimal.valueOf(a);
+        BigDecimal db = BigDecimal.valueOf(b);
+        BigDecimal expectedQ = da.divide(db, RoundingMode.FLOOR);
+        BigDecimal expectedR = da.remainder(db);
+
+        assertEquals(
+                String.format("Division %d / %d = (q: %s, r: %s), " +
+                        "actual (q: %s, r: %s).",
+                        a, b, qr[0], qr[1], expectedQ, expectedR),
+                expectedQ.toString(), qr[0].toString());
+
+        assertEquals(
+                String.format("Division %d / %d = (q: %s, r: %s), " +
+                                "actual (q: %s, r: %s).",
+                        a, b, qr[0], qr[1], expectedQ, expectedR),
+                expectedR.toString(), qr[1].toString());
+    }
+
 
     private void assertMultiplyWorks(long a, long b) {
         Z10 za = Z10.of(a);
