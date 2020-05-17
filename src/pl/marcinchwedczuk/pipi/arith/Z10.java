@@ -165,6 +165,15 @@ public class Z10 {
         return setSign$(SIGN_PLUS);
     }
 
+    public int sign() {
+        return sign;
+    }
+
+    public Z10 negate$() {
+        setSign$(negSign(sign));
+        return this;
+    }
+
     public Z10 setSign$(int sign) {
         this.sign = (sign == 0)
                 ? SIGN_PLUS
@@ -348,7 +357,7 @@ public class Z10 {
         int aDigits = a.digitsCount();
         int bDigits = b.digitsCount();
 
-        Z10 result = Z10.newWithCapacity(aDigits * bDigits);
+        Z10 result = Z10.newWithCapacity(aDigits * bDigits + 1);
 
         for (int ai = 0; ai < aDigits; ai++) {
             // Multiply b by digit ai and add to result in place
