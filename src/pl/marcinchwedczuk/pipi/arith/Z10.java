@@ -3,6 +3,8 @@ package pl.marcinchwedczuk.pipi.arith;
 import java.util.Arrays;
 
 public class Z10 {
+    private static final Z10 ZERO = Z10.of(0);
+
     public static Z10 newWithCapacity(int ndigits) {
         return new Z10(ndigits);
     }
@@ -426,5 +428,16 @@ public class Z10 {
         }
 
         return new Z10[]{quotient, rest};
+    }
+
+    public static Z10 gcd(Z10 a, Z10 b) {
+        return (cmp(a, b) > 0)
+                ? gcd0(a, b)
+                : gcd0(b, a);
+    }
+
+    private static Z10 gcd0(Z10 bigger, Z10 smaller) {
+        if (cmpAbs(smaller, ZERO) == 0) return bigger;
+        return gcd0(smaller, divideSlowly(bigger, smaller)[1]);
     }
 }

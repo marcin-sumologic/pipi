@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -205,6 +206,52 @@ public class Z10Test {
                         "Dividing %d and %d resulted in exception %s.", a, b, e));
             }
         }
+    }
+
+    @Test public void gcd_works() {
+        Random r = ThreadLocalRandom.current();
+
+        assertGCDWorks(10, 0);
+        assertGCDWorks(100, 25);
+        assertGCDWorks(100, 125);
+
+        for (int i = 0; i < 1000; i++) {
+            long a = Math.abs(r.nextLong());
+            long b = Math.abs(r.nextLong());
+
+            try {
+                assertGCDWorks(a, b);
+            }
+            catch (AssertionError ae) { throw ae; } // junit
+            catch (Exception e) {
+                e.printStackTrace();
+                Assert.fail(String.format(
+                        "Dividing %d and %d resulted in exception %s.", a, b, e));
+            }
+        }
+    }
+
+    private long gcd(long a, long b) {
+        return (a > b) ? gcd0(a, b) : gcd0(b, a);
+    }
+
+    private long gcd0(long bigger, long smaller) {
+        if (smaller == 0) return bigger;
+        return gcd0(smaller, bigger % smaller);
+    }
+
+    private void assertGCDWorks(long a, long b) {
+        Z10 za = Z10.of(a);
+        Z10 zb = Z10.of(b);
+        Z10 result = Z10.gcd(za, zb);
+
+        BigInteger ia = BigInteger.valueOf(a);
+        BigInteger ib = BigInteger.valueOf(b);
+        BigInteger expected = ia.gcd(ib);
+
+        assertEquals(
+                String.format("GCD(%d, %d) = %s, actual %s", a, b, expected, result),
+                expected.toString(), result.toString());
     }
 
     private void assertDivisionWorks(long a, long b) {
