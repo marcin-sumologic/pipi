@@ -133,6 +133,59 @@ public class Z10Test {
         }
     }
 
+    @Test public void multiplication_works() {
+        assertMultiplyWorks(0, 0);
+        assertMultiplyWorks(1, 1);
+
+        assertMultiplyWorks(4, 0);
+        assertMultiplyWorks(-4, 0);
+        assertMultiplyWorks(0, 4);
+        assertMultiplyWorks(0, -4);
+
+        assertMultiplyWorks(4, 1);
+        assertMultiplyWorks(-4, 1);
+        assertMultiplyWorks(1, 4);
+        assertMultiplyWorks(1, -4);
+
+        assertMultiplyWorks(2, 3);
+        assertMultiplyWorks(-2, 3);
+        assertMultiplyWorks(2, -3);
+        assertMultiplyWorks(-2, -3);
+    }
+
+    @Test public void multiply_stress_test() {
+        Random r = ThreadLocalRandom.current();
+
+        for (int i = 0; i < 1000; i++) {
+            long a = r.nextLong();
+            long b = r.nextLong();
+
+            try {
+                assertMultiplyWorks(a, b);
+            }
+            catch (AssertionError ae) { throw ae; } // junit
+            catch (Exception e) {
+                e.printStackTrace();
+                Assert.fail(String.format(
+                        "Multiplying %d and %d resulted in exception %s.", a, b, e));
+            }
+        }
+    }
+
+    private void assertMultiplyWorks(long a, long b) {
+        Z10 za = Z10.of(a);
+        Z10 zb = Z10.of(b);
+        Z10 result = Z10.multiply(za, zb);
+
+        BigDecimal da = BigDecimal.valueOf(a);
+        BigDecimal db = BigDecimal.valueOf(b);
+        BigDecimal expected = da.multiply(db);
+
+        assertEquals(
+                String.format("Multiplying %d * %d = %s, actual %s", a, b, expected, result),
+                expected.toString(), result.toString());
+    }
+
     private void assertAddWorks(long a, long b) {
         Z10 za = Z10.of(a);
         Z10 zb = Z10.of(b);

@@ -248,6 +248,12 @@ public class Z10 {
         return 0;
     }
 
+    private static int negSign(int sign) {
+        return (sign == SIGN_PLUS)
+                ? SIGN_MINUS
+                : SIGN_PLUS;
+    }
+
     public static Z10 add(Z10 a, Z10 b) {
         if (a.sign == b.sign) {
             return addSameSign(a, b);
@@ -275,12 +281,6 @@ public class Z10 {
                     ? subtractIgnoreSign(a, b).setSign$(a.sign)
                     : subtractIgnoreSign(b, a).setSign$(negSign(b.sign));
         }
-    }
-
-    private static int negSign(int sign) {
-        return (sign == SIGN_PLUS)
-            ? SIGN_MINUS
-            : SIGN_PLUS;
     }
 
     private static Z10 addSameSign(Z10 a, Z10 b) {
@@ -333,6 +333,34 @@ public class Z10 {
             else {
                 result.internalSetDigitAtNoResize$(i, d1 - d2);
             }
+        }
+
+        return result;
+    }
+
+    public static Z10 multiply(Z10 a, Z10 b) {
+        int aDigits = a.digitsCount();
+        int bDigits = b.digitsCount();
+
+        Z10 result = Z10.newWithCapacity(aDigits*bDigits);
+
+        for (int ai = 0; ai < aDigits; ai++) {
+            // Multiply b by digit ai and add to result in place
+            int ad = a.internalDigitAt(ai);
+            int carry = 0;
+            for (int bi = 0; bi < bDigits; bi++) {
+                int r = result.internalDigitAt(ai+bi);
+                r += carry + ad*b.internalDigitAt(bi);
+                result.internalSetDigitAtNoResize$(ai+bi, r % 10);
+                carry = r / 10;
+            }
+            // carry digit was not yet set by any computation so
+            // we may replace `+=` with just `=`.
+            result.internalSetDigitAtNoResize$(ai + bDigits, carry);
+        }
+
+        if ((a.sign != b.sign) && !result.isZero()) {
+            result.setMinus$();
         }
 
         return result;
