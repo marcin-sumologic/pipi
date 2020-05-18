@@ -1,13 +1,24 @@
 package pl.marcinchwedczuk.pipi.arith;
 
 public class Q10 {
+    public static Q10 of(long number) {
+        return of(number, 1);
+    }
+
     public static Q10 of(long numerator, long denominator) {
         return new Q10(Z10.of(numerator), Z10.of(denominator));
+    }
+
+    public static Q10 copy(Q10 other) {
+        return new Q10(other.numerator, other.denominator);
     }
 
     // The sign of numerator determines sign of the fraction.
     private final Z10 numerator;
     private final Z10 denominator;
+
+    public Z10 numeratorCopy() { return Z10.copy(numerator); }
+    public Z10 denominatorCopy() { return Z10.copy(denominator); }
 
     public Q10(Z10 numerator, Z10 denominator) {
         if (denominator.isZero()) throw new ArithmeticException("divide by zero!");
@@ -37,6 +48,8 @@ public class Q10 {
             s.append('.');
             Z10 rest = qr[1];
             for (int i = 0; i < maxFractionDigits; i++) {
+                if ((i > 0) && ((i % 10) == 0)) s.append(' ');
+
                 // TODO: x10 multiply can be speed up
                 rest = Z10.multiply(rest, Z10.of(10));
                 qr = Z10.divideSlowly(rest, denominator);
@@ -57,5 +70,20 @@ public class Q10 {
                 Z10.multiply(b.numerator, a.denominator));
 
         return new Q10(numerator, commonDenom);
+    }
+
+    public static Q10 subtract(Q10 a, Q10 b) {
+        Z10 commonDenom = Z10.multiply(a.denominator, b.denominator);
+        Z10 numerator = Z10.subtract(
+                Z10.multiply(a.numerator, b.denominator),
+                Z10.multiply(b.numerator, a.denominator));
+
+        return new Q10(numerator, commonDenom);
+    }
+
+    public static Q10 multiply(Q10 a, Q10 b) {
+        Z10 numerator = Z10.multiply(a.numerator, b.numerator);
+        Z10 denominator = Z10.multiply(a.denominator, b.denominator);
+        return new Q10(numerator, denominator);
     }
 }
