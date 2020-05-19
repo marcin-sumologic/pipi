@@ -11,12 +11,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class MachinLikeAlgorithms {
+    // https://web.archive.org/web/20100619233448/http://turner.faculty.swau.edu/mathematics/materialslibrary/pi/machin.html
+
     public static void main(String[] args) throws Exception {
+        // TODO: Euler accelerated formula for arctan
+
         // takano(1000) <- overflow int - number of digits.
         // NWD Q to reduce number of digits.
 
         // takanoFormula(10_000); <- not finished
-        String pi = chienLihFormula(10_000);
+        String pi = takanoFormula(1_000);
         PiChecker.checkValid(pi);
         System.out.println(pi);
 
