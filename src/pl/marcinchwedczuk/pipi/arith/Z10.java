@@ -446,7 +446,12 @@ public class Z10 {
     }
 
     private static Z10 gcd0(Z10 bigger, Z10 smaller) {
-        if (cmpAbs(smaller, ZERO) == 0) return bigger;
-        return gcd0(smaller, divideSlowly(bigger, smaller)[1]);
+        while (true) {
+            if (cmpAbs(smaller, ZERO) == 0) return bigger;
+
+            Z10 tmp = divideSlowly(bigger, smaller)[1];
+            bigger = smaller;
+            smaller = tmp;
+        }
     }
 }

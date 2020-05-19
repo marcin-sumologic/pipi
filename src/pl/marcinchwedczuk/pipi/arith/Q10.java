@@ -32,6 +32,14 @@ public class Q10 {
         }
     }
 
+    public Q10 reduce() {
+        Z10 gcd = Z10.gcd(numerator, denominator);
+
+        return new Q10(
+            Z10.divideSlowly(numerator, gcd)[0],
+            Z10.divideSlowly(denominator, gcd)[0]);
+    }
+
     @Override
     public String toString() {
         return numerator.toString() + "/" + denominator.toString();
@@ -69,7 +77,12 @@ public class Q10 {
                 Z10.multiply(a.numerator, b.denominator),
                 Z10.multiply(b.numerator, a.denominator));
 
-        return new Q10(numerator, commonDenom);
+        // Reduce
+        Z10 gcd = Z10.gcd(numerator, commonDenom);
+
+        return new Q10(
+                Z10.divideSlowly(numerator, gcd)[0],
+                Z10.divideSlowly(commonDenom, gcd)[0]);
     }
 
     public static Q10 subtract(Q10 a, Q10 b) {
@@ -78,7 +91,12 @@ public class Q10 {
                 Z10.multiply(a.numerator, b.denominator),
                 Z10.multiply(b.numerator, a.denominator));
 
-        return new Q10(numerator, commonDenom);
+        // Reduce
+        Z10 gcd = Z10.gcd(numerator, commonDenom);
+
+        return new Q10(
+                Z10.divideSlowly(numerator, gcd)[0],
+                Z10.divideSlowly(commonDenom, gcd)[0]);
     }
 
     public static Q10 multiply(Q10 a, Q10 b) {
