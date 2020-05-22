@@ -20,7 +20,8 @@ public class MachinLikeAlgorithms {
         // NWD Q to reduce number of digits.
 
         // takanoFormula(10_000); <- not finished
-        String pi = takanoFormula(1_000);
+
+        String pi = Time.measure(() -> chienLihFormula(1000)); // Operation took 40 secs.
         PiChecker.checkValid(pi);
         System.out.println(pi);
 
@@ -107,7 +108,7 @@ public class MachinLikeAlgorithms {
                 boolean reportProgress = (index == 0);
                 Q10 term = Q10.multiply(
                         Q10.of(multipliers[index]),
-                        arctan(Q10.of(1, parts[index]), nterms[index], reportProgress));
+                        arctanAccelerated(Q10.of(1, parts[index]), nterms[index], reportProgress));
 
                 return term;
             });
@@ -138,6 +139,8 @@ public class MachinLikeAlgorithms {
     }
 
     private static Q10 arctan(Q10 x, long nterms, boolean reportProgress) {
+        final int REDUCE_EVERY_NTERMS = 1 + (int)Math.min(9, nterms / 10);
+
         Q10 sum = Q10.of(0);
 
         int k = 1;
@@ -158,12 +161,45 @@ public class MachinLikeAlgorithms {
            k += 2;
            xk = Q10.multiply(xk, x2);
 
+           if ((i % REDUCE_EVERY_NTERMS) == 0) {
+               sum = sum.reduce();
+           }
+
            if (reportProgress && ((i % 100) == 0)) {
-               System.out.printf("PROGRESS: %.2f%n", ((double)i) / nterms);
+               System.out.printf("PROGRESS: %.2f%%%n", (100.0f * i) / nterms);
                System.out.flush();
            }
         }
 
+        return sum;
+    }
+
+    private static Q10 arctanAccelerated(Q10 oneOverX, long nterms, boolean reportProgress) {
+        // TODO: Check if nterms calculation for arctan can be used here safely
+        final int REDUCE_EVERY_NTERMS = 1 + (int)Math.min(9, nterms / 10);
+
+        // Euler's accelerated formula for tan-1 (arctan)
+        if (Z10.cmp(oneOverX.numeratorCopy(), Z10.of(1)) != 0)
+            throw new IllegalArgumentException("oneOverX must be a fraction in form 1/x");
+
+        Z10 x = oneOverX.denominatorCopy();
+        Q10 term = new Q10(Z10.of(1), Z10.add(Z10.of(1), Z10.multiply(x, x)));
+        Q10 termPart = new Q10(Z10.of(1), Z10.add(Z10.of(1), Z10.multiply(x, x)));
+        Q10 sum = Q10.copy(term);
+
+        long k = 2;
+        for (int i = 0; i < nterms; i++) {
+            term = Q10.multiply(term, Q10.multiply(termPart, Q10.of(k, k+1)));
+            sum = Q10.add(sum, term);
+            k += 2;
+
+            if ((i % REDUCE_EVERY_NTERMS) == 0) {
+                sum = sum.reduce();
+                term = term.reduce();
+            }
+        }
+
+        sum = Q10.multiply(sum, new Q10(x, Z10.of(1)));
         return sum;
     }
 }
