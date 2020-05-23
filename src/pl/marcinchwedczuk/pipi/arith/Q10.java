@@ -20,15 +20,17 @@ public class Q10 {
     public Z10 numeratorCopy() { return Z10.copy(numerator); }
     public Z10 denominatorCopy() { return Z10.copy(denominator); }
 
+    public int sizeEstimate() { return numerator.digitsCount() + denominator.digitsCount(); }
+
     public Q10(Z10 numerator, Z10 denominator) {
         if (denominator.isZero()) throw new ArithmeticException("divide by zero!");
 
         this.numerator = numerator;
         this.denominator = denominator;
 
-        if (denominator.sign() == Z10.SIGN_MINUS) {
+        if (denominator.sign() != Z10.SIGN_PLUS) {
             this.numerator.negate$();
-            this.denominator.negate$();
+            this.denominator.setPlus$();
         }
     }
 
@@ -92,6 +94,12 @@ public class Q10 {
     public static Q10 multiply(Q10 a, Q10 b) {
         Z10 numerator = Z10.multiply(a.numerator, b.numerator);
         Z10 denominator = Z10.multiply(a.denominator, b.denominator);
+        return new Q10(numerator, denominator);
+    }
+
+    public static Q10 divide(Q10 a, Q10 b) {
+        Z10 numerator = Z10.multiply(a.numerator, b.denominator);
+        Z10 denominator = Z10.multiply(a.denominator, b.numerator);
         return new Q10(numerator, denominator);
     }
 }

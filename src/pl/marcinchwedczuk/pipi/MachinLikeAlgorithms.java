@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 
 public class MachinLikeAlgorithms {
     // https://web.archive.org/web/20100619233448/http://turner.faculty.swau.edu/mathematics/materialslibrary/pi/machin.html
+    // https://en.wikipedia.org/wiki/Machin-like_formula
 
     public static void main(String[] args) throws Exception {
         // TODO: Euler accelerated formula for arctan
@@ -82,11 +83,6 @@ public class MachinLikeAlgorithms {
         return pi.toDecimalString(npidigits);
     }
 
-    // TODO: Hwang Chien-Lih formula
-    // https://en.wikipedia.org/wiki/Machin-like_formula
-    /*
-    {\displaystyle {\begin{aligned}{\frac {\pi }{4}}=&36462\arctan {\frac {1}{390112}}+135908\arctan {\frac {1}{485298}}+274509\arctan {\frac {1}{683982}}\\&-39581\arctan {\frac {1}{1984933}}+178477\arctan {\frac {1}{2478328}}-114569\arctan {\frac {1}{3449051}}\\&-146571\arctan {\frac {1}{18975991}}+61914\arctan {\frac {1}{22709274}}-69044\arctan {\frac {1}{24208144}}\\&-89431\arctan {\frac {1}{201229582}}-43938\arctan {\frac {1}{2189376182}}\\\end{aligned}}}
-     */
 
     private static String chienLihFormula(int npidigits) throws Exception {
         long[] multipliers =
