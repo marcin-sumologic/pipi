@@ -187,6 +187,32 @@ public class ZF10Test {
         }
     }
 
+    @Test public void add_works() {
+        assertAddWork(0, 0);
+        assertAddWork(10, 0);
+        assertAddWork(-10, 0);
+        assertAddWork(0, 10);
+        assertAddWork(0, -10);
+
+        assertAddWork(1234, 4321);
+        assertAddWork(-1234, -4321);
+        assertAddWork(-1234, 4321);
+        assertAddWork(1234, -4321);
+
+        assertAddWork(9999, 7);
+        assertAddWork(-9999, -7);
+        assertAddWork(9999, 99999);
+    }
+
+    static void assertAddWork(long a, long b) {
+        ZF10 expected = ZF10.of(a + b);
+        ZF10 actual = ZF10.of(a).add(ZF10.of(b));
+
+        String msg = String.format("%s is different than %s (sum of %d and %d).",
+            actual, expected, a, b);
+        assertTrue(msg, ZF10.cmp(expected, actual) == 0);
+    }
+
     static void assertCmpWorks(long a, long b) {
         ZF10 zfa = ZF10.of(a);
         ZF10 zfb = ZF10.of(b);

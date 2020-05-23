@@ -76,7 +76,7 @@ public class ZF10 {
         loadDigits(sign, digitPerByte);
     }
 
-    private ZF10(int sign, int exponent, byte[] digits) {
+    private ZF10(int sign, byte[] digits, int exponent) {
         this.sign = sign;
         this.exponent = exponent;
         this.digits = digits;
@@ -113,53 +113,55 @@ public class ZF10 {
     }
 
     public ZF10 negate() {
-        return new ZF10(-sign, exponent, digits);
+        return new ZF10(-sign, digits, exponent);
     }
 
     public ZF10 abs() {
-        return new ZF10(1, exponent, digits);
+        return new ZF10(1, digits, exponent);
     }
 
     public static int cmp(ZF10 a, ZF10 b) {
-        // Check sign
         if (a.sign != b.sign) {
             return a.sign - b.sign;
         }
 
         int sign = a.sign;
+        return sign * cmpAbs(
+                a.digits, a.exponent,
+                b.digits, b.exponent);
+    }
+
+    private static int cmpAbs(byte[] aDigits, int aExponent,
+                              byte[] bDigits, int bExponent) {
 
         // Fast track cmp(exp) when first digit is non zero
-        if (a.exponent != b.exponent) {
+        if (aExponent != bExponent) {
             // number is either in form 0.dddd x 10^exp
             // where first d != 0, or in form
             // 0.00000 x 10^0 (for zero).
 
-            boolean aNonZero = hiDigit(a.digits[0]) != 0;
-            boolean bNonZero = hiDigit(b.digits[0]) != 0;
+            boolean aNonZero = hiDigit(aDigits[0]) != 0;
+            boolean bNonZero = hiDigit(bDigits[0]) != 0;
 
             if (aNonZero && bNonZero) {
-                return sign * (a.exponent - b.exponent);
+                return (aExponent - bExponent);
             }
             else if (aNonZero) {
-                return sign * 1;
+                return 1;
             }
             else if(bNonZero) {
-                return sign * (-1);
+                return (-1);
             }
             else {
                 throw new AssertionError("cannot happen");
             }
         }
 
-        return sign * cmpDigits(a.digits, b.digits);
-    }
-
-    private static int cmpDigits(byte[] a, byte[] b) {
         for (int i = 0; i < DIGITS_ARR_SIZE; i++) {
-            int cmp = hiDigit(a[i]) - hiDigit(b[i]);
+            int cmp = hiDigit(aDigits[i]) - hiDigit(bDigits[i]);
             if (cmp != 0) return cmp;
 
-            cmp = loDigit(a[i]) - loDigit(b[i]);
+            cmp = loDigit(aDigits[i]) - loDigit(bDigits[i]);
             if (cmp != 0) return cmp;
         }
 
@@ -175,9 +177,33 @@ public class ZF10 {
     }
 
     public ZF10 add(ZF10 other) {
-        byte[] sum = new byte[DIGITS_ARR_SIZE];
+        if (this.sign == other.sign) {
+            DigitsExponent sum = addAbs(
+                    this.digits, this.exponent,
+                    other.digits, other.exponent);
 
-        throw new RuntimeException();
+            return new ZF10(this.sign, sum.digits, sum.exponent);
+        }
+        else {
+            // subtract
+            DigitsExponent diff;
+            int diffSign;
+
+            if (cmpAbs(this.digits, this.exponent, other.digits, other.exponent) >= 0) {
+                diff = subtractAbs(
+                        this.digits, this.exponent,
+                        other.digits, other.exponent);
+                diffSign = this.sign;
+            }
+            else {
+                diff = subtractAbs(
+                        other.digits, other.exponent,
+                        this.digits, this.exponent);
+                diffSign = other.sign;
+            }
+
+            return new ZF10(diffSign, diff.digits, diff.exponent);
+        }
     }
 
     // computes a - b, a >= b
@@ -204,12 +230,14 @@ public class ZF10 {
 
         for (int i = DIGITS_ARR_SIZE-1; i >= 0; i--) {
             int rlo = loDigit(aDigits[i]) - loDigit(bDigits[i]) - borrow;
+            borrow = 0;
             if (rlo < 0) {
                 rlo += 10;
                 borrow = 1;
             }
 
             int rhi = hiDigit(aDigits[i]) - hiDigit(bDigits[i]) - borrow;
+            borrow = 0;
             if (rhi < 0) {
                 rhi += 10;
                 borrow = 1;
@@ -221,8 +249,14 @@ public class ZF10 {
         if (borrow != 0) throw new AssertionError("a was not <= b");
 
         int zeros = countLeadingZeros(result);
-        shiftLeft(result, zeros);
-        exp -= zeros;
+        if (zeros == (DIGITS_ARR_SIZE*2)) {
+            // zero value
+            exp = 0;
+        }
+        else {
+            shiftLeft(result, zeros);
+            exp -= zeros;
+        }
 
         return new DigitsExponent(result, exp);
     }
@@ -276,31 +310,30 @@ public class ZF10 {
     }
 
     static byte[] shiftRight(byte[] digits, int ndigits) {
+        return shiftRight(digits, ndigits, new byte[DIGITS_ARR_SIZE], 0);
+    }
+
+    static byte[] shiftRight(byte[] digits, int ndigits, byte[] dest, int destStart) {
         if ((ndigits & 1) == 0) {
             // Fast path - moving entire bytes (digit pairs)
-            byte[] tmp = new byte[DIGITS_ARR_SIZE];
-            int bytes = ndigits / 2;
+            int shiftBytes = ndigits / 2;
 
             System.arraycopy(
                     digits, 0,
-                    tmp, bytes, DIGITS_ARR_SIZE - bytes);
+                    dest, shiftBytes + destStart, digits.length - shiftBytes);
 
-            return tmp;
+            return dest;
         }
         else {
             // Slow path moving nibbles (single digits)
-
-            byte[] tmp = new byte[DIGITS_ARR_SIZE];
-            int digitsCount = DIGITS_ARR_SIZE * 2;
+            int digitsCount = digits.length * 2 - ndigits;
 
             for (int i = 0; i < digitsCount; i++) {
-                int destIdx = i + ndigits;
-                if (destIdx >= digitsCount) break;
-
-                setDigit(tmp, destIdx, getDigit(digits, i));
+                int destIdx = i + ndigits + 2*destStart;
+                setDigit(dest, destIdx, getDigit(digits, i));
             }
 
-            return tmp;
+            return dest;
         }
     }
 
@@ -319,8 +352,6 @@ public class ZF10 {
             byte[] aDigits, int aExponent,
             byte[] bDigits, int bExponent)
     {
-        // +1 for carry
-        byte[] result = new byte[DIGITS_ARR_SIZE+1];
 
         byte[] max, min;
         int minE, maxE;
@@ -333,43 +364,46 @@ public class ZF10 {
             min = aDigits; minE = aExponent;
         }
 
-        int shift = maxE - minE;
-        for (int i = 0; i < DIGITS_ARR_SIZE; i++) {
-            int destIdx = i + shift + 1; // result[0] is reserved for carry
-            if (destIdx >= DIGITS_ARR_SIZE) break;
+        byte[] result = new byte[DIGITS_ARR_SIZE];
 
-            result[destIdx] = min[i];
-        }
+        // Move min to result and shift it to maxE
+        int shift = maxE - minE;
+        shiftRight(min, shift, result, 0);
 
         // Perform addition result += max
         int c = 0;
-        for (int i = DIGITS_ARR_SIZE-1, r = DIGITS_ARR_SIZE; i >= 0; i--, r--) {
-            int rlo = loDigit(max[i]) + loDigit(result[r]) + c;
+        for (int i = DIGITS_ARR_SIZE-1; i >= 0; i--) {
+            int rlo = loDigit(max[i]) + loDigit(result[i]) + c;
+            c = 0;
             if (rlo >= 10) {
                 rlo -= 10;
                 c = 1;
             }
 
-            int rhi = hiDigit(max[i]) + hiDigit(result[r]) + c;
+            int rhi = hiDigit(max[i]) + hiDigit(result[i]) + c;
+            c = 0;
             if (rhi >= 10) {
                 rhi -= 10;
                 c = 1;
             }
 
-            result[r] = (byte)(rlo | (rhi << 4));
+            result[i] = (byte)(rlo | (rhi << 4));
         }
-        result[0] = (byte)c;
 
-        if (result[0] == 0) {
-            return new DigitsExponent(
-                    Arrays.copyOfRange(result, 1, result.length),
-                    maxE);
+        if (c == 0) {
+            return new DigitsExponent(result, maxE);
         }
         else {
             // TODO: Currently no rounding
-            return new DigitsExponent(
-                    Arrays.copyOfRange(result, 0, result.length-1),
-                    maxE + 1);
+
+            // Shift result 1 digit right
+            for (int i = result.length*2 - 1; i > 0; i--) {
+                setDigit(result, i, getDigit(result, i-1));
+            }
+            // please carry as the first digit
+            result[0] = (byte)(loDigit(result[0]) | (c << 4));
+
+            return new DigitsExponent(result, maxE + 1);
         }
     }
 
