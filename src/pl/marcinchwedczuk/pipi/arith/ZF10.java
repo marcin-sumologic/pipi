@@ -168,12 +168,20 @@ public class ZF10 {
         return 0;
     }
 
+    public boolean isZero() {
+        return (this.exponent == 0) && isZero(this.digits);
+    }
+
     static boolean isZero(byte[] arr) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] != 0) return false;
         }
 
         return true;
+    }
+
+    public ZF10 subtract(ZF10 other) {
+        return this.add(other.negate());
     }
 
     public ZF10 add(ZF10 other) {
@@ -229,14 +237,14 @@ public class ZF10 {
         int borrow = 0;
 
         for (int i = DIGITS_ARR_SIZE-1; i >= 0; i--) {
-            int rlo = loDigit(aDigits[i]) - loDigit(bDigits[i]) - borrow;
+            int rlo = (int)loDigit(aDigits[i]) - loDigit(bDigits[i]) - borrow;
             borrow = 0;
             if (rlo < 0) {
                 rlo += 10;
                 borrow = 1;
             }
 
-            int rhi = hiDigit(aDigits[i]) - hiDigit(bDigits[i]) - borrow;
+            int rhi = (int)hiDigit(aDigits[i]) - hiDigit(bDigits[i]) - borrow;
             borrow = 0;
             if (rhi < 0) {
                 rhi += 10;
@@ -254,7 +262,7 @@ public class ZF10 {
             exp = 0;
         }
         else {
-            shiftLeft(result, zeros);
+            result = shiftLeft(result, zeros);
             exp -= zeros;
         }
 
@@ -407,6 +415,62 @@ public class ZF10 {
         }
     }
 
+    public ZF10 multiply(ZF10 other) {
+        return multiply(this, other);
+    }
+
+    private static ZF10 multiply(ZF10 a, ZF10 b) {
+        if (a.isZero() || b.isZero()) return ZER0;
+
+        int sign = a.sign * b.sign;
+        int exponent = a.exponent + b.exponent;
+
+        final int RESULT_BYTES = 2*DIGITS_ARR_SIZE;
+        final int RESULT_DIGITS_COUNT = 2*RESULT_BYTES;
+        byte[] result = new byte[RESULT_BYTES];
+
+        final int DIGITS_COUNT = DIGITS_ARR_SIZE*2;
+        for (int bi = DIGITS_COUNT - 1; bi >= 0; bi--) {
+            int c = 0;
+            int bDigit = getDigit(b.digits, bi);
+            int bE = (DIGITS_COUNT - 1) - bi;
+
+            for (int ai = DIGITS_COUNT-1; ai >= 0; ai--) {
+                int aE  = (DIGITS_COUNT - 1) - ai;
+                int rE = aE + bE;
+
+                int ri = (RESULT_DIGITS_COUNT - 1) - rE;
+                int r = getDigit(result, ri) + bDigit * getDigit(a.digits, ai) + c;
+                c = r / 10;
+                setDigit(result, ri, (byte)(r % 10));
+
+                if (c >= 10) throw new AssertionError();
+            }
+
+            int rE = bE + (DIGITS_COUNT - 1) + 1;
+            int ri = (RESULT_DIGITS_COUNT - 1) - rE;
+            setDigit(result, ri, (byte)c);
+        }
+
+        byte[] resultClamped = new byte[DIGITS_ARR_SIZE];
+        if (hiDigit(result[0]) != 0) {
+            // carry present - just clamp the value
+            System.arraycopy(result, 0, resultClamped, 0, resultClamped.length);
+            return new ZF10(sign, resultClamped, exponent);
+        }
+        else {
+            // Example: 0.1 x 0.3 = 0.03
+
+            // Shift one digit left
+            for (int i = 0; i < DIGITS_ARR_SIZE*2; i++) {
+                setDigit(resultClamped, i, getDigit(result, i+1));
+            }
+
+            // Reduce exponent by 1
+            return new ZF10(sign, resultClamped, exponent-1);
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(this.digits.length + 1 + 1);
@@ -420,7 +484,8 @@ public class ZF10 {
         while ((stop >= 0) && (this.digits[stop] == 0))
             stop--;
 
-        for (int k = 0, d = 0; k <= stop; k++) {
+        int d = 0;
+        for (int k = 0; k <= stop; k++) {
             sb.append(hiDigit(this.digits[k]));
             if (++d == this.exponent) sb.append('.');
 
@@ -432,6 +497,10 @@ public class ZF10 {
 
         if (sb.charAt(sb.length()-1) == '.')
             sb.deleteCharAt(sb.length()-1);
+
+        if (d < this.exponent) {
+            sb.append('E').append(this.exponent - d);
+        }
 
         return sb.toString();
     }

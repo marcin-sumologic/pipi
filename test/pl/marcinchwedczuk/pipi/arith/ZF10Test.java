@@ -59,26 +59,35 @@ public class ZF10Test {
         assertHasExponent(zf, 9); // !!!
     }
 
+    @Test public void of_zeros_properly_sets_zero() {
+        ZF10 zf;
+
+        zf = ZF10.of(0);
+        assertTrue(zf.isZero());
+
+        zf = ZF10.of(0, 0);
+        assertTrue(zf.isZero());
+
+        zf = ZF10.of(0, 0, 0);
+        assertTrue(zf.isZero());
+
+        zf = ZF10.of(0, 0, 0, 0);
+        assertTrue(zf.isZero());
+    }
+
     @Test public void toString_works() {
-        assertEquals(
-                "12345",
-                ZF10.of(12345).toString()
-        );
+        assertEquals("12345", ZF10.of(12345).toString());
+        assertEquals("-12345", ZF10.of(-12345).toString());
+        assertEquals("0", ZF10.of(0).toString());
+        assertEquals("-2", ZF10.of(-2).toString());
 
-        assertEquals(
-                "-12345",
-                ZF10.of(-12345).toString()
-        );
+        ZF10.setPrecision(2);
+        assertEquals("12E1", ZF10.of(121).toString());
+        assertEquals("12E1", ZF10.of(127).toString());
 
-        assertEquals(
-                "0",
-                ZF10.of(0).toString()
-        );
-
-        assertEquals(
-                "-2",
-                ZF10.of(-2).toString()
-        );
+        ZF10.setPrecision(4);
+        assertEquals("1234E1", ZF10.of(12345).toString());
+        assertEquals("1234E2", ZF10.of(123456).toString());
     }
 
     @Test public void shiftLeft_works() {
@@ -179,6 +188,8 @@ public class ZF10Test {
         assertCmpWorks(-130, -13);
         assertCmpWorks(-13, -130);
 
+        ZF10.setPrecision(20);
+
         for (int i = 0; i < 1000; i++) {
             long a = ThreadLocalRandom.current().nextLong();
             long b = ThreadLocalRandom.current().nextLong();
@@ -188,23 +199,77 @@ public class ZF10Test {
     }
 
     @Test public void add_works() {
-        assertAddWork(0, 0);
-        assertAddWork(10, 0);
-        assertAddWork(-10, 0);
-        assertAddWork(0, 10);
-        assertAddWork(0, -10);
+        assertAdditionWorks(0, 0);
+        assertAdditionWorks(10, 0);
+        assertAdditionWorks(-10, 0);
+        assertAdditionWorks(0, 10);
+        assertAdditionWorks(0, -10);
 
-        assertAddWork(1234, 4321);
-        assertAddWork(-1234, -4321);
-        assertAddWork(-1234, 4321);
-        assertAddWork(1234, -4321);
+        assertAdditionWorks(1234, 4321);
+        assertAdditionWorks(-1234, -4321);
+        assertAdditionWorks(-1234, 4321);
+        assertAdditionWorks(1234, -4321);
 
-        assertAddWork(9999, 7);
-        assertAddWork(-9999, -7);
-        assertAddWork(9999, 99999);
+        assertAdditionWorks(9999, 7);
+        assertAdditionWorks(-9999, -7);
+        assertAdditionWorks(9999, 99999);
+
+        ZF10.setPrecision(20);
+
+        for (int i = 0; i < 1000; i++) {
+            long a = ThreadLocalRandom.current().nextLong() / 2;
+            long b = ThreadLocalRandom.current().nextLong() / 2;
+
+            assertAdditionWorks(a, b);
+        }
     }
 
-    static void assertAddWork(long a, long b) {
+    @Test public void multiply_works() {
+        assertMultiplicationWorks(0, 123);
+        assertMultiplicationWorks(0, -123);
+        assertMultiplicationWorks(123, 0);
+        assertMultiplicationWorks(-123, 0);
+        assertMultiplicationWorks(0, 0);
+
+
+        assertMultiplicationWorks(1, 123);
+        assertMultiplicationWorks(1, -123);
+        assertMultiplicationWorks(123, 1);
+        assertMultiplicationWorks(-123, 1);
+        assertMultiplicationWorks(1, 1);
+
+        assertMultiplicationWorks(9, 9);
+        assertMultiplicationWorks(99, 99);
+        assertMultiplicationWorks(999, 999);
+        assertMultiplicationWorks(99, 999);
+        assertMultiplicationWorks(999, 99);
+
+        assertMultiplicationWorks(34, 21);
+
+        ZF10.setPrecision(20);
+
+        for (int i = 0; i < 1000; i++) {
+            int a = ThreadLocalRandom.current().nextInt();
+            int b = ThreadLocalRandom.current().nextInt();
+
+            assertMultiplicationWorks(a, b);
+        }
+    }
+
+    @Test public void foo() {
+        assertMultiplicationWorks(5, 7);
+    }
+
+    static void assertMultiplicationWorks(int a, int b) {
+        ZF10 expected = ZF10.of(1L * a * b);
+        ZF10 actual = ZF10.of(a).multiply(ZF10.of(b));
+
+        String msg = String.format("%s is different than %s (product of %d and %d).",
+                actual, expected, a, b);
+        assertTrue(msg, ZF10.cmp(expected, actual) == 0);
+    }
+
+    static void assertAdditionWorks(long a, long b) {
         ZF10 expected = ZF10.of(a + b);
         ZF10 actual = ZF10.of(a).add(ZF10.of(b));
 
