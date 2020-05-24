@@ -120,6 +120,10 @@ public class ZF10 {
         return new ZF10(1, digits, exponent);
     }
 
+    public ZF10 exp10(int exp) {
+        return new ZF10(sign, digits, exponent + exp);
+    }
+
     public static int cmp(ZF10 a, ZF10 b) {
         if (a.sign != b.sign) {
             return a.sign - b.sign;
@@ -471,38 +475,102 @@ public class ZF10 {
         }
     }
 
+    public ZF10 divide(ZF10 other) {
+        return divide(this, other);
+    }
+
+    public static ZF10 divide(ZF10 a, ZF10 b) {
+        if (b.isZero()) throw new ArithmeticException("divide by zero!");
+
+        int sign = a.sign / b.sign;
+        int exponent = a.exponent - b.exponent;
+
+        byte[] aDigits = a.digits;
+        byte[] bDigits = b.digits;
+
+        byte[] quotient = new byte[DIGITS_ARR_SIZE];
+
+        int divExp = 0;
+        int exp = 0;
+        int correction = -1;
+        while ((divExp < DIGITS_ARR_SIZE*2) && !isZero(aDigits)) {
+            // a*10^exp >= b
+            while (cmpAbs(aDigits, exp + divExp, bDigits, 0) >= 0) {
+                correction = (exp == 0) ? 1 : correction;
+                DigitsExponent tmp = subtractAbs(aDigits, exp + divExp, bDigits, 0);
+                aDigits = tmp.digits;
+                exp = tmp.exponent - divExp;
+                setDigit(quotient, divExp, (byte)(getDigit(quotient, divExp) + 1));
+            }
+
+            divExp++;
+        }
+
+        // 125 / 100 -> 1.25 vs 125 / 250 -> 0.50
+        exponent += correction;
+
+        // normalize
+        int zeros = countLeadingZeros(quotient);
+        if (zeros == (DIGITS_ARR_SIZE*2)) {
+            // zero value
+            exponent = 0;
+        }
+        else {
+            quotient = shiftLeft(quotient, zeros);
+            exponent -= zeros;
+        }
+
+        return new ZF10(sign, quotient, exponent);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(this.digits.length + 1 + 1);
-
         if (sign < 0) sb.append('-');
 
-        if (exponent < 1) sb.append("0.");
+        if ((exponent < 0) || exponent > DIGITS_ARR_SIZE*2) {
+            // Use exponent notation
+            int exp = exponent - 1; // 0.DDD = D.DDD * 10^-1
+            for (int di = 0; di < DIGITS_ARR_SIZE*2; di++) {
+                sb.append(getDigit(digits, di));
+                if (di == 0) sb.append('.');
+            }
+            removeLastZeros(sb);
+            sb.append('E').append(exp);
+            return sb.toString();
+        }
 
-        // detect last zeros
-        int stop = this.digits.length-1;
-        while ((stop >= 0) && (this.digits[stop] == 0))
-            stop--;
+        if (exponent < 1) {
+            sb.append("0.");
+        }
 
-        int d = 0;
-        for (int k = 0; k <= stop; k++) {
-            sb.append(hiDigit(this.digits[k]));
-            if (++d == this.exponent) sb.append('.');
-
-            if (k != stop || loDigit(this.digits[k]) != 0) {
-                sb.append(loDigit(this.digits[k]));
-                if (++d == this.exponent) sb.append('.');
+        for (int di = 0; di < DIGITS_ARR_SIZE*2; di++) {
+            sb.append(getDigit(digits, di));
+            if ((di+1) == this.exponent) {
+                sb.append('.');
             }
         }
 
+        // there must be a '.' in sb
+        removeLastZeros(sb);
+
+        // get rid of trailing '.'
         if (sb.charAt(sb.length()-1) == '.')
             sb.deleteCharAt(sb.length()-1);
 
-        if (d < this.exponent) {
-            sb.append('E').append(this.exponent - d);
-        }
-
         return sb.toString();
+    }
+
+    private static void removeLastZeros(StringBuilder sb) {
+        while (sb.length() > 0) {
+            char lastChar = sb.charAt(sb.length()-1);
+            if (lastChar == '0') {
+                sb.deleteCharAt(sb.length()-1);
+            }
+            else {
+                break;
+            }
+        }
     }
 
     private static void checkValidDigit(byte b) {

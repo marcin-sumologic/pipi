@@ -82,12 +82,20 @@ public class ZF10Test {
         assertEquals("-2", ZF10.of(-2).toString());
 
         ZF10.setPrecision(2);
-        assertEquals("12E1", ZF10.of(121).toString());
-        assertEquals("12E1", ZF10.of(127).toString());
+        assertEquals("12", ZF10.of(12).toString());
+        assertEquals("1.2E2", ZF10.of(121).toString());
+        assertEquals("1.2E2", ZF10.of(127).toString());
 
         ZF10.setPrecision(4);
-        assertEquals("1234E1", ZF10.of(12345).toString());
-        assertEquals("1234E2", ZF10.of(123456).toString());
+        assertEquals("1234", ZF10.of(1234).toString());
+        assertEquals("1.234E4", ZF10.of(12345).toString());
+        assertEquals("1.234E5", ZF10.of(123456).toString());
+
+        // fractions
+        ZF10.setPrecision(6);
+        assertEquals("123.456", ZF10.of(123456).exp10(-3).toString());
+        assertEquals("0.123456", ZF10.of(123456).exp10(-6).toString());
+        assertEquals("1.23456E-3", ZF10.of(123456).exp10(-8).toString());
     }
 
     @Test public void shiftLeft_works() {
@@ -256,8 +264,53 @@ public class ZF10Test {
         }
     }
 
+    @Test public void division_works() {
+        assertDivisionWorks(125, 1);
+        assertDivisionWorks(5, 1);
+        assertDivisionWorks(-5, 1);
+        assertDivisionWorks(5, 5);
+        assertDivisionWorks(-5, -5);
+
+        ZF10 r = ZF10.of(1).divide(ZF10.of(3));
+        assertEquals("0.3333333", r.toString());
+
+        ZF10.setPrecision(20);
+
+        for (int i = 0; i < 1000; i++) {
+            int a = ThreadLocalRandom.current().nextInt();
+            int b = ThreadLocalRandom.current().nextInt();
+
+            assertDivisionWorks(a * (long)b, b);
+
+            double maxError = 1e-6; // 20 precision
+            assertDivisionWorksFP(a, b, maxError);
+        }
+    }
+
     @Test public void foo() {
-        assertMultiplicationWorks(5, 7);
+        ZF10.setPrecision(20);
+        assertDivisionWorksFP(37953419, 2055345563, 1e-6);
+    }
+
+    static void assertDivisionWorks(long a, long b) {
+        ZF10 expected = ZF10.of(a / b);
+        ZF10 actual = ZF10.of(a).divide(ZF10.of(b));
+
+        String msg = String.format("%s is different than expected %s (quotient of %d and %d).",
+                actual, expected, a, b);
+        assertTrue(msg, ZF10.cmp(expected, actual) == 0);
+    }
+
+    static void assertDivisionWorksFP(long a, long b, double maxError) {
+        double expected = a / (double)b;
+
+        ZF10 actualZF = ZF10.of(a).divide(ZF10.of(b));
+        double actual = Double.parseDouble(actualZF.toString());
+
+        double err = Math.abs(expected - actual);
+        String msg = String.format("%f is different than expected %f, err = %f (quotient of %d and %d).",
+                actual, expected, err, a, b);
+        assertTrue(msg, err <= maxError);
     }
 
     static void assertMultiplicationWorks(int a, int b) {
