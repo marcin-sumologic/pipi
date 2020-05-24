@@ -222,6 +222,9 @@ public class ZF10Test {
         assertAdditionWorks(-9999, -7);
         assertAdditionWorks(9999, 99999);
 
+        ZF10 r = ZF10.of(123).exp10(-6).add(ZF10.zero());
+        assertEquals("1.23E-4", r.toString());
+
         ZF10.setPrecision(20);
 
         for (int i = 0; i < 1000; i++) {

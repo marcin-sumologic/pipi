@@ -9,8 +9,8 @@ public class ZF10 {
         DIGITS_ARR_SIZE = (significantDigits + 1) / 2;
     }
 
-    public static final ZF10 ZER0 = of(0);
-    public static final ZF10 ONE = of(1);
+    public static ZF10 zero() { return of(0); }
+    public static ZF10 one() { return of(1); }
 
     public static ZF10 of(long n) {
         return of(Long.toString(n));
@@ -45,6 +45,10 @@ public class ZF10 {
         }
 
         return new ZF10(sign, digitsPerByte);
+    }
+
+    public static ZF10 frac(long numerator, long denominator) {
+        return ZF10.of(numerator).divide(ZF10.of(denominator));
     }
 
     // Number 71234 will be represented as
@@ -258,7 +262,9 @@ public class ZF10 {
             result[i] = (byte)((rhi << 4) | rlo);
         }
 
-        if (borrow != 0) throw new AssertionError("a was not <= b");
+        if (borrow != 0) {
+            throw new AssertionError("a was not <= b");
+        }
 
         int zeros = countLeadingZeros(result);
         if (zeros == (DIGITS_ARR_SIZE*2)) {
@@ -293,6 +299,8 @@ public class ZF10 {
     }
 
     static byte[] shiftLeft(byte[] digits, int ndigits) {
+        if (ndigits == 0) return digits;
+
         if ((ndigits & 1) == 0) {
             // Fast path - moving entire bytes (digit pairs)
             byte[] tmp = new byte[DIGITS_ARR_SIZE];
@@ -403,6 +411,15 @@ public class ZF10 {
         }
 
         if (c == 0) {
+            // Normalize (case adding 0.001 + 0.000)
+            int zeros = countLeadingZeros(result);
+            if (zeros == (DIGITS_ARR_SIZE * 2)) {
+                maxE = 0;
+            }
+            else {
+                result = shiftLeft(result, zeros);
+                maxE -= zeros;
+            }
             return new DigitsExponent(result, maxE);
         }
         else {
@@ -424,7 +441,7 @@ public class ZF10 {
     }
 
     private static ZF10 multiply(ZF10 a, ZF10 b) {
-        if (a.isZero() || b.isZero()) return ZER0;
+        if (a.isZero() || b.isZero()) return zero();
 
         int sign = a.sign * b.sign;
         int exponent = a.exponent + b.exponent;

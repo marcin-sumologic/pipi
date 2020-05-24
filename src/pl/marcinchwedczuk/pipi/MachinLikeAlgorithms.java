@@ -2,6 +2,7 @@ package pl.marcinchwedczuk.pipi;
 
 import pl.marcinchwedczuk.pipi.arith.Q10;
 import pl.marcinchwedczuk.pipi.arith.Z10;
+import pl.marcinchwedczuk.pipi.arith.ZF10;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +23,11 @@ public class MachinLikeAlgorithms {
 
         // takanoFormula(10_000); <- not finished
 
-        String pi = Time.measure(() -> chienLihFormula(1000)); // Operation took 40 secs.
+        int ndigits = 5000;
+        ZF10.setPrecision(ndigits + 50);
+        String pi = Time
+                .measure(() -> machinFormulaZF(ndigits))
+                .substring(0, ndigits);
         PiChecker.checkValid(pi);
         System.out.println(pi);
 
@@ -44,6 +49,21 @@ public class MachinLikeAlgorithms {
         Q10 pi = Q10.multiply(Q10.of(4), delta);
 
         return pi.toDecimalString(npidigits);
+    }
+
+    private static String machinFormulaZF(int npidigits) {
+        // aprox number of needed terms in series:
+        int nterms5 =  arctanNterms(npidigits, 1, 5);
+        int nterms239 = arctanNterms(npidigits, 1, 239);
+
+        // https://en.wikipedia.org/wiki/Machin-like_formula
+        ZF10 arctan1$239 = arctanZF(ZF10.frac(1, 239), nterms239, true);
+        ZF10 _4arctan1$5 = arctanZF(ZF10.frac(1, 5), nterms5, true).multiply(ZF10.of(4));
+        ZF10 delta = _4arctan1$5.subtract(arctan1$239);
+
+        ZF10 pi = delta.multiply(ZF10.of(4));
+
+        return pi.toString();
     }
 
     private static String takanoFormula(int npidigits) throws Exception {
@@ -134,6 +154,10 @@ public class MachinLikeAlgorithms {
         return arctan(x, nterms, false);
     }
 
+    private static ZF10 arctanZF(ZF10 x, long nterms) {
+        return arctanZF(x, nterms, false);
+    }
+
     private static Q10 arctan(Q10 x, long nterms, boolean reportProgress) {
         final int REDUCE_EVERY_NTERMS = 1 + (int)Math.min(9, nterms / 10);
 
@@ -165,6 +189,28 @@ public class MachinLikeAlgorithms {
                System.out.printf("PROGRESS: %.2f%%%n", (100.0f * i) / nterms);
                System.out.flush();
            }
+        }
+
+        return sum;
+    }
+
+    private static ZF10 arctanZF(ZF10 x, long nterms, boolean reportProgress) {
+        ZF10 sum = ZF10.zero();
+
+        int k = 1;
+        ZF10 xk = x;
+        ZF10 mx2 = x.multiply(x).multiply(ZF10.of(-1));
+
+        for (long i = 0; i < nterms; i++) {
+            sum = sum.add(xk.divide(ZF10.of(k)));
+
+            k += 2;
+            xk = xk.multiply(mx2);
+
+            if (reportProgress && ((i % 100) == 0)) {
+                System.out.printf("PROGRESS: %.2f%%%n", (100.0f * i) / nterms);
+                System.out.flush();
+            }
         }
 
         return sum;
