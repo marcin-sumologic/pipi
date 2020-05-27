@@ -23,7 +23,7 @@ public class MachinLikeAlgorithms {
 
         // takanoFormula(10_000); <- not finished
 
-        int ndigits = 1000;
+        int ndigits = 10_000;
         ZF10.setPrecision(ndigits + 50);
         String pi = Time
                 .measure(() -> machinFormulaZF(ndigits))

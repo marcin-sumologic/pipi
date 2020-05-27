@@ -402,12 +402,20 @@ public class ZF10 {
             return dest;
         }
         else {
-            // Slow path moving nibbles (single digits)
-            int digitsCount = digits.length * 2 - ndigits;
+            int bytesCount = ndigits / 2;
+            // zero first bytesCount+1 of dest
+            for (int i = 0; i < bytesCount; i++) {
+                dest[i] = 0;
+            }
 
-            for (int i = 0; i < digitsCount; i++) {
-                int destIdx = i + ndigits + 2*destStart;
-                setDigit(dest, destIdx, getDigit(digits, i));
+            // Move first nibble
+            int destByteIndex = destStart + ndigits / 2;
+            dest[destByteIndex] = hiDigit(digits[0]);
+
+            // Now destination is aligned to full bytes
+            for (int i = 0, j = 1; ++destByteIndex < DIGITS_ARR_SIZE; i++, j++) {
+                byte b = (byte)((loDigit(digits[i]) << 4) | hiDigit(digits[j]));
+                dest[destByteIndex] = b;
             }
 
             return dest;
