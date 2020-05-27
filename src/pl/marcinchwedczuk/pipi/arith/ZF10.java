@@ -549,10 +549,17 @@ public class ZF10 {
         else {
             // Example: 0.1 x 0.3 = 0.03
 
-            // Shift one digit left
-            for (int i = 0; i < DIGITS_ARR_SIZE*2; i++) {
-                setDigit(resultClamped, i, getDigit(result, i+1));
+            // (INLINED) Shift one digit left
+            int srcIndex = 0;
+            int i;
+            for (i = 0; srcIndex < DIGITS_ARR_SIZE-1; i++, srcIndex++) {
+                resultClamped[i] = (byte)(
+                        (loDigit(result[srcIndex]) << 4) | hiDigit(result[srcIndex+1]));
             }
+
+            // Last nibble
+            resultClamped[i] = (byte)(loDigit(result[srcIndex]) << 4);
+
 
             // Reduce exponent by 1
             return new ZF10(sign, resultClamped, exponent-1);
