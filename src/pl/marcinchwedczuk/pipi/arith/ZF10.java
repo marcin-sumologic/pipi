@@ -373,14 +373,16 @@ public class ZF10 {
             // Slow path moving nibbles (single digits)
 
             byte[] tmp = new byte[DIGITS_ARR_SIZE];
-            int digitsCount = DIGITS_ARR_SIZE * 2;
 
-            for (int i = 0; i < digitsCount; i++) {
-                int srcIdx = i + ndigits;
-                if (srcIdx >= digitsCount) break;
-
-                setDigit(tmp, i, getDigit(digits, srcIdx));
+            int srcIndex = ndigits / 2;
+            int i;
+            for (i = 0; srcIndex < DIGITS_ARR_SIZE-1; i++, srcIndex++) {
+                tmp[i] = (byte)(
+                        (loDigit(digits[srcIndex]) << 4) | hiDigit(digits[srcIndex+1]));
             }
+
+            // Last nibble
+            tmp[i] = (byte)(loDigit(digits[srcIndex]) << 4);
 
             return tmp;
         }
