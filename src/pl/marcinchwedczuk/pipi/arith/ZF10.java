@@ -166,11 +166,19 @@ public class ZF10 {
         }
 
         for (int i = 0; i < DIGITS_ARR_SIZE; i++) {
+            // 0xFF & - to make bytes unsigned
+            int cmp = (0xFF & aDigits[i]) - (0xFF & bDigits[i]);
+            if (cmp != 0) return cmp;
+
+            // 7271472872895727965
+            // 7299261844604367075
+            /*
             int cmp = hiDigit(aDigits[i]) - hiDigit(bDigits[i]);
             if (cmp != 0) return cmp;
 
             cmp = loDigit(aDigits[i]) - loDigit(bDigits[i]);
             if (cmp != 0) return cmp;
+            */
         }
 
         return 0;
@@ -521,6 +529,7 @@ public class ZF10 {
         for (int bi = DIGITS_COUNT - 1; bi >= 0; bi--) {
             int c = 0;
             int bDigit = getDigit(b.digits, bi);
+            if (bDigit == 0) continue;
             int bE = (DIGITS_COUNT - 1) - bi;
 
             for (int ai = DIGITS_COUNT-1; ai >= 0; ai--) {

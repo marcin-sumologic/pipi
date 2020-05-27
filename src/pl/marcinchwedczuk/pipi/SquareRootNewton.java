@@ -59,7 +59,7 @@ public class SquareRootNewton {
     }
 
     public static void mainZF10() {
-        int ndigits = 1_000_000;
+        int ndigits = 100_000;
 
         ZF10.setPrecision(ndigits);
 

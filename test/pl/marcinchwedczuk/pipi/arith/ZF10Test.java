@@ -344,7 +344,8 @@ public class ZF10Test {
 
         int expectedCmp = Long.compare(a, b);
 
-        assertEquals(expectedCmp, cmp);
+        assertEquals(String.format("problem comparing %d and %d", a, b),
+                expectedCmp, cmp);
     }
 
     static void assertHasDigits(ZF10 zf, int... digits) {
