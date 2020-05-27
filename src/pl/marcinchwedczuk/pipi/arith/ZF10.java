@@ -279,6 +279,63 @@ public class ZF10 {
         return new DigitsExponent(result, exp);
     }
 
+    // computes a - b*m, a >= b*m
+    private static DigitsExponent divSubtractAbs(
+            byte[] aDigits, int aExponent,
+            byte[] bDigits, int bExponent, int m)
+    {
+        int exp;
+
+        if (aExponent > bExponent) {
+            exp = aExponent;
+            bDigits = shiftRight(bDigits, aExponent - bExponent);
+        }
+        else if(aExponent < bExponent) {
+            exp = bExponent;
+            aDigits = shiftRight(aDigits, bExponent - aExponent);
+        }
+        else {
+            exp = aExponent;
+        }
+
+        byte[] result = new byte[DIGITS_ARR_SIZE];
+        int borrow = 0;
+
+        for (int i = DIGITS_ARR_SIZE-1; i >= 0; i--) {
+            int rlo = (int)loDigit(aDigits[i]) - m*loDigit(bDigits[i]) - borrow;
+            borrow = 0;
+            while (rlo < 0) {
+                rlo += 10;
+                borrow++;
+            }
+
+            int rhi = (int)hiDigit(aDigits[i]) - m*hiDigit(bDigits[i]) - borrow;
+            borrow = 0;
+            while (rhi < 0) {
+                rhi += 10;
+                borrow++;
+            }
+
+            result[i] = (byte)((rhi << 4) | rlo);
+        }
+
+        if (borrow != 0) {
+            throw new AssertionError("a was not <= m*b");
+        }
+
+        int zeros = countLeadingZeros(result);
+        if (zeros == (DIGITS_ARR_SIZE*2)) {
+            // zero value
+            exp = 0;
+        }
+        else {
+            result = shiftLeft(result, zeros);
+            exp -= zeros;
+        }
+
+        return new DigitsExponent(result, exp);
+    }
+
     static int countLeadingZeros(byte[] digits) {
         int leadingZeros = 0;
 
@@ -513,11 +570,13 @@ public class ZF10 {
         while ((divExp < DIGITS_ARR_SIZE*2) && !isZero(aDigits)) {
             // a*10^exp >= b
             while (cmpAbs(aDigits, exp + divExp, bDigits, 0) >= 0) {
+                int estimate = estimateDiv(aDigits, bDigits);
+
                 correction = (exp == 0) ? 1 : correction;
-                DigitsExponent tmp = subtractAbs(aDigits, exp + divExp, bDigits, 0);
+                DigitsExponent tmp = divSubtractAbs(aDigits, exp + divExp, bDigits, 0, estimate);
                 aDigits = tmp.digits;
                 exp = tmp.exponent - divExp;
-                setDigit(quotient, divExp, (byte)(getDigit(quotient, divExp) + 1));
+                setDigit(quotient, divExp, (byte)(getDigit(quotient, divExp) + estimate));
             }
 
             divExp++;
@@ -538,6 +597,17 @@ public class ZF10 {
         }
 
         return new ZF10(sign, quotient, exponent);
+    }
+
+    private static int estimateDiv(byte[] a, byte[] b) {
+        long aa = 0, bb = 0;
+
+        for (int i = 0; i < 2; i++) {
+            aa = aa*100 + hiDigit(a[i])*10 + loDigit(a[i]);
+            bb = bb*100 + hiDigit(b[i])*10 + loDigit(b[i]);
+        }
+
+        return (int) Math.max(1, aa / (bb + 1));
     }
 
     @Override
