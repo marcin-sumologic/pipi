@@ -2,9 +2,9 @@ package pl.marcinchwedczuk.pipi.arith;
 
 public class JniZF10 {
     static {
-        // Remember to add to run config
-        // -Djava.library.path="./out/production/pipi/"
-        System.loadLibrary("jnizf10");
+        // Relative to program current working directory
+        String libPath = System.getProperty("user.dir") + "/out/production/pipi/libjnizf10.dylib";
+        System.load(libPath);
     }
 
     public static native int cmpAbs(byte[] aDigits, int aExponent,

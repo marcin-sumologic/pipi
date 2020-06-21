@@ -7,7 +7,9 @@ javah -classpath "./out/production/pipi" \
 
 mkdir -p "./out/production/pipi/"
 
-# Library name must start with lib, so library X becomes libX
+rm -f ./out/production/pipi/*.dylib
+
+# Library name must start with lib on MacOS, so library X becomes libX
 gcc -I"$JAVA_HOME/include" \
   -I"$JAVA_HOME/include/darwin" \
   -I"./jni/headers" \
