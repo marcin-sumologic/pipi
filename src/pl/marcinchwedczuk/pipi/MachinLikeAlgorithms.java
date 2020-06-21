@@ -18,9 +18,6 @@ public class MachinLikeAlgorithms {
 
     public static void main(String[] args) throws Exception {
         // TODO: Euler accelerated formula for arctan
-        System.out.println(JniZF10.cmpAbs(
-                new byte[] { 1, 2, 3 }, 0,
-                new byte[] { 1, 2, 3 }, 0));
 
         // takano(1000) <- overflow int - number of digits.
         // NWD Q to reduce number of digits.

@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     pl_marcinchwedczuk_pipi_arith_JniZF10
+ * Method:    initializeLibrary
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_pl_marcinchwedczuk_pipi_arith_JniZF10_initializeLibrary
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     pl_marcinchwedczuk_pipi_arith_JniZF10
  * Method:    cmpAbs
  * Signature: ([BI[BI)I
  */

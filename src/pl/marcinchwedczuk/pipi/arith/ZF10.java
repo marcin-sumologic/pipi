@@ -3,7 +3,6 @@ package pl.marcinchwedczuk.pipi.arith;
 import java.util.Arrays;
 
 public class ZF10 {
-    private static boolean USE_JNI = true;
     private static int DIGITS_ARR_SIZE = 10;
 
     public static void setPrecision(int significantDigits) {
@@ -142,10 +141,6 @@ public class ZF10 {
 
     private static int cmpAbs(byte[] aDigits, int aExponent,
                               byte[] bDigits, int bExponent) {
-        if (USE_JNI) {
-            return JniZF10.cmpAbs(aDigits, aExponent, bDigits, bExponent);
-        }
-
         // Fast track cmp(exp) when first digit is non zero
         if (aExponent != bExponent) {
             // number is either in form 0.dddd x 10^exp

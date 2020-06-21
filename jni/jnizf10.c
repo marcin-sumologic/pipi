@@ -25,6 +25,11 @@ jint throwRuntimeExcpeption(JNIEnv *env, char *message)
   return (*env)->ThrowNew(env, exClass, message);
 }
 
+// NOTE: Carry can be probagated using addOne array of bcd numbers
+// addOne(byte b) -> return b+1 BCD number!!!
+// carryOne(b) -> returns if carry is neccessary!!!
+// 2x256  bytes mem space!!!
+
 JNIEXPORT jint JNICALL Java_pl_marcinchwedczuk_pipi_arith_JniZF10_cmpAbs(JNIEnv *env, jclass thisObj,
                                                                          jbyteArray aDigits, jint aExponent,
                                                                          jbyteArray bDigits, jint bExponent)
