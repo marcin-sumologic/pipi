@@ -1,5 +1,6 @@
 package pl.marcinchwedczuk.pipi;
 
+import pl.marcinchwedczuk.pipi.arith.JniZF10;
 import pl.marcinchwedczuk.pipi.arith.Q10;
 import pl.marcinchwedczuk.pipi.arith.Z10;
 import pl.marcinchwedczuk.pipi.arith.ZF10;
@@ -18,12 +19,17 @@ public class MachinLikeAlgorithms {
     public static void main(String[] args) throws Exception {
         // TODO: Euler accelerated formula for arctan
 
+        System.setProperty("java.library.path",
+                System.getProperty("user.dir") + "/out/production/pipi/");
+        System.out.println("Java Lib Path: " + System.getProperty("java.library.path"));
+        System.out.println(JniZF10.cmpAbs(null, 0, null, 0));
+
         // takano(1000) <- overflow int - number of digits.
         // NWD Q to reduce number of digits.
 
         // takanoFormula(10_000); <- not finished
 
-        int ndigits = 1_000;
+        int ndigits = 5_000;
         ZF10.setPrecision(ndigits + 50);
         String pi = Time
                 .measure(() -> machinFormulaZF(ndigits))
